@@ -1,46 +1,42 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { supabase } from '../supabaseClient'; // Adjust path if necessary
 
-export default function FlowerBedForm({ open, onOpenChange, bed, onSave }) {
-  const [name, setName] = useState('');
+const FlowerBedForm = ({ onBedAdded }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    location: '',
+    photo_url: '',
+    notes: ''
+  });
 
-  useEffect(() => {
-    if (bed) setName(bed.name || '');
-    else setName('');
-  }, [bed]);
-
-  if (!open) return null;
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSave({ name });
-    onOpenChange(false);
+    const { data, error } = await supabase
+      .from('flower_beds')
+      .insert([formData]);
+
+    if (error) {
+      console.error('Error adding flower bed:', error);
+    } else {
+      onBedAdded();
+      setFormData({ name: '', location: '', photo_url: '', notes: '' });
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4 text-slate-900">{bed ? 'Edit' : 'Add'} Flower Bed</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2 text-slate-700">Bed Name</label>
-            <input
-              type="text"
-              required
-              className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-slate-900"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Front Yard Roses"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Save</Button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
+      <h3>Add New Flower Bed</h3>
+      <input name="name" placeholder="Bed Name" value={formData.name} onChange={handleChange} required />
+      <input name="location" placeholder="Location" value={formData.location} onChange={handleChange} />
+      <input name="photo_url" placeholder="Photo URL" value={formData.photo_url} onChange={handleChange} />
+      <textarea name="notes" placeholder="Ground conditions/Notes" value={formData.notes} onChange={handleChange} />
+      <button type="submit">Add Flower Bed</button>
+    </form>
   );
-}
+};
+
+export default FlowerBedForm;
