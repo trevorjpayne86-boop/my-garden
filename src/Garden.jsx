@@ -15,9 +15,30 @@ export default function Garden() {
   const [plantFormOpen, setPlantFormOpen] = useState(false);
   const [activeBedForPlant, setActiveBedForPlant] = useState(null);
 
-  // Fetch Live Data from Supabase
+  // Fetch Live Data
   const { data: beds = [] } = useQuery({ queryKey: ['beds'], queryFn: base44.entities.FlowerBed.list });
   const { data: plants = [] } = useQuery({ queryKey: ['plants'], queryFn: base44.entities.Plant.list });
+
+  // CSV Export Logic
+  const exportToCSV = () => {
+    const headers = ["Name", "Latin Name", "Quantity", "Notes"];
+    const csvContent = [
+      headers.join(","),
+      ...plants.map(p => [
+        `"${(p.name || '').replace(/"/g, '""')}"`, 
+        `"${(p.latin_name || '').replace(/"/g, '""')}"`, 
+        p.quantity || 0, 
+        `"${(p.notes || '').replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.setAttribute("href", url);
+    a.setAttribute("download", "my_garden_plants.csv");
+    a.click();
+  };
 
   // Database Actions (Beds)
   const saveBed = useMutation({
@@ -51,9 +72,14 @@ export default function Garden() {
     <div className="py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900">My Garden Tracker</h1>
-        <Button onClick={() => { setEditingBed(null); setBedFormOpen(true); }}>
-          + Add Flower Bed
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={exportToCSV} className="bg-slate-600 text-white">
+            Export CSV
+          </Button>
+          <Button onClick={() => { setEditingBed(null); setBedFormOpen(true); }}>
+            + Add Flower Bed
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -61,7 +87,6 @@ export default function Garden() {
           <FlowerBedCard 
             key={bed.id} 
             bed={bed} 
-            // We filter the massive list of plants to only show the ones that belong to this specific bed
             plants={plants.filter(p => p.flower_bed_id === bed.id)}
             onEdit={(b) => { setEditingBed(b); setBedFormOpen(true); }}
             onDelete={(b) => deleteBed.mutate(b.id)}
