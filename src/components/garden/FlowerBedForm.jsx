@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { supabase } from "../../supabaseClient"; // Adjust path if necessary
+import React, { useState, useEffect } from 'react';
 
-const FlowerBedForm = ({ onBedAdded }) => {
+const FlowerBedForm = ({ open, onOpenChange, bed, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -9,33 +8,33 @@ const FlowerBedForm = ({ onBedAdded }) => {
     notes: ''
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  // Load existing data if editing
+  useEffect(() => {
+    if (bed) setFormData(bed);
+  }, [bed]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { data, error } = await supabase
-      .from('flower_beds')
-      .insert([formData]);
-
-    if (error) {
-      console.error('Error adding flower bed:', error);
-    } else {
-      onBedAdded();
-      setFormData({ name: '', location: '', photo_url: '', notes: '' });
-    }
+    await onSave(formData);
+    setFormData({ name: '', location: '', photo_url: '', notes: '' });
   };
 
+  if (!open) return null;
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-      <h3>Add New Flower Bed</h3>
-      <input name="name" placeholder="Bed Name" value={formData.name} onChange={handleChange} required />
-      <input name="location" placeholder="Location" value={formData.location} onChange={handleChange} />
-      <input name="photo_url" placeholder="Photo URL" value={formData.photo_url} onChange={handleChange} />
-      <textarea name="notes" placeholder="Ground conditions/Notes" value={formData.notes} onChange={handleChange} />
-      <button type="submit">Add Flower Bed</button>
-    </form>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg w-full max-w-md flex flex-col gap-4">
+        <h2 className="text-xl font-bold">{bed ? 'Edit' : 'Add'} Flower Bed</h2>
+        <input name="name" placeholder="Bed Name" className="border p-2" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+        <input name="location" placeholder="Location" className="border p-2" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} />
+        <input name="photo_url" placeholder="Photo URL" className="border p-2" value={formData.photo_url} onChange={(e) => setFormData({...formData, photo_url: e.target.value})} />
+        <textarea name="notes" placeholder="Ground conditions/Notes" className="border p-2" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} />
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => onOpenChange(false)}>Cancel</button>
+          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Save Bed</button>
+        </div>
+      </form>
+    </div>
   );
 };
 
