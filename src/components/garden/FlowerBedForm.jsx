@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient'; // Adjust path if necessary
+import { supabase } from "../../supabaseClient"; // Adjust path if necessary
 
 const FlowerBedForm = ({ onBedAdded }) => {
   const [formData, setFormData] = useState({
